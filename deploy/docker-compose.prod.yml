@@ -2,7 +2,7 @@
 # Server: 188.245.65.247
 # Access: http://188.245.65.247:3000 (Frontend), http://188.245.65.247:8080 (Backend API)
 
-version: '3.8'
+# version: '3.8'  # Obsolete in Docker Compose V2
 
 services:
   postgres:
@@ -47,7 +47,7 @@ services:
       - qrmenu-network
     ports:
       - "9000:9000"
-      - "9001:9001"
+      - "9002:9001"
 
   backend:
     build:

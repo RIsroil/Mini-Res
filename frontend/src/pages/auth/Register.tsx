@@ -7,7 +7,6 @@ import AuthLayout from '../../components/layout/AuthLayout'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { authApi } from '../../lib/api'
-import { useAuthStore } from '../../store/authStore'
 
 interface RegisterForm {
   phone: string

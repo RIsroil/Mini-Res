@@ -34,11 +34,17 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# Check if Docker Compose is installed
-if ! command -v docker-compose &> /dev/null; then
+# Check if Docker Compose is installed (V1 or V2)
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+elif docker compose version &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+else
     echo -e "${RED}❌ Docker Compose not found. Please install Docker Compose first.${NC}"
     exit 1
 fi
+
+echo -e "${GREEN}✅ Using: $DOCKER_COMPOSE${NC}"
 
 echo -e "${BLUE}📦 Step 1: Checking environment...${NC}"
 
@@ -89,19 +95,19 @@ fi
 echo ""
 
 echo -e "${BLUE}📦 Step 2: Stopping existing containers...${NC}"
-docker-compose -f docker-compose.prod.yml --env-file .env.production down
+$DOCKER_COMPOSE -f docker-compose.prod.yml --env-file .env.production down
 
 echo -e "${GREEN}✅ Stopped${NC}"
 echo ""
 
 echo -e "${BLUE}📦 Step 3: Building images...${NC}"
-docker-compose -f docker-compose.prod.yml --env-file .env.production build --no-cache
+$DOCKER_COMPOSE -f docker-compose.prod.yml --env-file .env.production build --no-cache
 
 echo -e "${GREEN}✅ Built${NC}"
 echo ""
 
 echo -e "${BLUE}📦 Step 4: Starting services...${NC}"
-docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+$DOCKER_COMPOSE -f docker-compose.prod.yml --env-file .env.production up -d
 
 echo -e "${GREEN}✅ Services started${NC}"
 echo ""
@@ -121,11 +127,11 @@ echo "   API Docs:  http://188.245.65.247:8080/swagger-ui.html"
 echo "   MinIO:     http://188.245.65.247:9001"
 echo ""
 echo "📊 Check status:"
-echo "   docker-compose -f docker-compose.prod.yml ps"
+echo "   $DOCKER_COMPOSE -f docker-compose.prod.yml ps"
 echo ""
 echo "📝 View logs:"
-echo "   docker-compose -f docker-compose.prod.yml logs -f"
+echo "   $DOCKER_COMPOSE -f docker-compose.prod.yml logs -f"
 echo ""
 echo "🛑 Stop services:"
-echo "   docker-compose -f docker-compose.prod.yml down"
+echo "   $DOCKER_COMPOSE -f docker-compose.prod.yml down"
 echo ""

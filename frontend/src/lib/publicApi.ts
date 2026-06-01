@@ -65,6 +65,9 @@ export interface PublicMenuItem {
   primaryImage?: string
   categoryId?: string
   categoryName?: string
+  restaurantId: string
+  restaurantName: string
+  restaurantSlug: string
 }
 
 export interface MenuResponse {

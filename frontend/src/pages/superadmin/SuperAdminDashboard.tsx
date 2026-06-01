@@ -5,7 +5,6 @@ import {
   Users,
   Store,
   TrendingUp,
-  DollarSign,
   Shield,
   LogOut,
   Settings,
@@ -129,7 +128,7 @@ export default function SuperAdminDashboard() {
               icon={<Settings className="w-5 h-5" />}
               label="System Settings"
               description="Configure system settings"
-              onClick={() => toast.info('Coming soon')}
+              onClick={() => toast('Coming soon', { icon: 'ℹ️' })}
             />
           </div>
         </div>

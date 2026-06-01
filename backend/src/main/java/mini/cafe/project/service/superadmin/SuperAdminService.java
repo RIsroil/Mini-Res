@@ -2,12 +2,14 @@ package mini.cafe.project.service.superadmin;
 
 import lombok.RequiredArgsConstructor;
 import mini.cafe.project.domain.Restaurant;
+import mini.cafe.project.domain.User;
 import mini.cafe.project.dto.common.LocationDto;
 import mini.cafe.project.dto.restaurant.RestaurantResponse;
 import mini.cafe.project.dto.restaurant.WorkingHour;
 import mini.cafe.project.exception.BusinessException;
 import mini.cafe.project.exception.ResourceNotFoundException;
 import mini.cafe.project.repository.RestaurantRepository;
+import mini.cafe.project.repository.UserRepository;
 import mini.cafe.project.util.GeoUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +26,7 @@ import java.util.UUID;
 public class SuperAdminService {
 
     private final RestaurantRepository restaurantRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public Page<Restaurant> getAllRestaurants(Restaurant.RestaurantStatus status, Pageable pageable) {
@@ -34,11 +37,40 @@ public class SuperAdminService {
     }
 
     @Transactional(readOnly = true)
+    public List<RestaurantResponse> getAllRestaurantsList(Restaurant.RestaurantStatus status) {
+        List<Restaurant> restaurants;
+        if (status != null) {
+            restaurants = restaurantRepository.findByStatus(status);
+        } else {
+            restaurants = restaurantRepository.findAll();
+        }
+        return restaurants.stream()
+                .map(this::toRestaurantResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<RestaurantResponse> getPendingRestaurants() {
         return restaurantRepository.findByStatus(Restaurant.RestaurantStatus.PENDING).stream()
                 .map(this::toRestaurantResponse)
                 .toList();
 
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getRestaurantStatistics() {
+        long total = restaurantRepository.count();
+        long active = restaurantRepository.countByStatus(Restaurant.RestaurantStatus.ACTIVE);
+        long pending = restaurantRepository.countByStatus(Restaurant.RestaurantStatus.PENDING);
+        long blocked = restaurantRepository.countByStatus(Restaurant.RestaurantStatus.BLOCKED);
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", total);
+        stats.put("active", active);
+        stats.put("pending", pending);
+        stats.put("blocked", blocked);
+
+        return stats;
     }
     private RestaurantResponse toRestaurantResponse(Restaurant restaurant) {
         Map<String, WorkingHour> workingHourDtos = new HashMap<>();
@@ -149,5 +181,41 @@ public class SuperAdminService {
         // Soft delete
         restaurant.softDelete();
         restaurantRepository.save(restaurant);
+    }
+
+    // ==================== USER MANAGEMENT ====================
+
+    @Transactional(readOnly = true)
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getUserStatistics() {
+        long total = userRepository.count();
+        long admins = userRepository.countByRole(User.UserRole.RESTAURANT_ADMIN);
+        long superAdmins = userRepository.countByRole(User.UserRole.SUPER_ADMIN);
+        long active = userRepository.countByIsActive(true);
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", total);
+        stats.put("admins", admins);
+        stats.put("superAdmins", superAdmins);
+        stats.put("active", active);
+
+        return stats;
+    }
+
+    @Transactional
+    public void toggleUserActiveStatus(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (user.getRole() == User.UserRole.SUPER_ADMIN) {
+            throw new BusinessException("Cannot modify super admin status");
+        }
+
+        user.setIsActive(!user.getIsActive());
+        userRepository.save(user);
     }
 }

@@ -21,4 +21,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByPhoneAndRole(String phone, User.UserRole role);
 
     Optional<User> findByPhoneAndDeletedAtIsNull(String phone);
+
+    Long countByRole(User.UserRole role);
+
+    Long countByIsActive(Boolean isActive);
 }

@@ -2,6 +2,7 @@ package mini.cafe.project.controller.superadmin;
 
 import lombok.RequiredArgsConstructor;
 import mini.cafe.project.domain.Restaurant;
+import mini.cafe.project.domain.User;
 import mini.cafe.project.dto.analytics.TopSearchQuery;
 import mini.cafe.project.dto.common.ApiResponse;
 import mini.cafe.project.dto.restaurant.RestaurantResponse;
@@ -30,6 +31,19 @@ public class SuperAdminController {
 
         Page<Restaurant> restaurants = superAdminService.getAllRestaurants(status, pageable);
         return ApiResponse.success(restaurants);
+    }
+
+    @GetMapping("/restaurants/list")
+    public ApiResponse<List<RestaurantResponse>> getAllRestaurantsList(
+            @RequestParam(required = false) Restaurant.RestaurantStatus status) {
+        List<RestaurantResponse> restaurants = superAdminService.getAllRestaurantsList(status);
+        return ApiResponse.success(restaurants);
+    }
+
+    @GetMapping("/restaurants/stats")
+    public ApiResponse<Map<String, Long>> getRestaurantStatistics() {
+        Map<String, Long> stats = superAdminService.getRestaurantStatistics();
+        return ApiResponse.success(stats);
     }
 
     @GetMapping("/restaurants/pending")
@@ -96,5 +110,25 @@ public class SuperAdminController {
     public ApiResponse<List<Map<String, Object>>> getTopRestaurants() {
         List<Map<String, Object>> topRestaurants = platformAnalyticsService.getTopRestaurants();
         return ApiResponse.success(topRestaurants);
+    }
+
+    // ==================== USER MANAGEMENT ====================
+
+    @GetMapping("/users")
+    public ApiResponse<List<User>> getAllUsers() {
+        List<User> users = superAdminService.getAllUsers();
+        return ApiResponse.success(users);
+    }
+
+    @GetMapping("/users/stats")
+    public ApiResponse<Map<String, Long>> getUserStatistics() {
+        Map<String, Long> stats = superAdminService.getUserStatistics();
+        return ApiResponse.success(stats);
+    }
+
+    @PatchMapping("/users/{id}/toggle-active")
+    public ApiResponse<Void> toggleUserActiveStatus(@PathVariable UUID id) {
+        superAdminService.toggleUserActiveStatus(id);
+        return ApiResponse.success("User status updated successfully", null);
     }
 }

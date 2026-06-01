@@ -8,9 +8,11 @@ import {
   Shield,
   LogOut,
   Settings,
-  Activity
+  Activity,
+  Clock
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+import { superAdminApi } from '../../lib/superAdminApi'
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate()
@@ -32,14 +34,24 @@ export default function SuperAdminDashboard() {
   }, [user, navigate])
 
   const loadStats = async () => {
-    // TODO: Load stats from API
-    // For now, using dummy data
-    setStats({
-      totalRestaurants: 15,
-      activeRestaurants: 12,
-      totalUsers: 15,
-      totalMenuItems: 240,
-    })
+    try {
+      const { data } = await superAdminApi.getRestaurantStats()
+      setStats({
+        totalRestaurants: data.data.total,
+        activeRestaurants: data.data.active,
+        totalUsers: data.data.total, // Will be updated with user count API
+        totalMenuItems: 0, // Will be updated with menu items count API
+      })
+    } catch (error) {
+      toast.error('Failed to load statistics')
+      // Use default values on error
+      setStats({
+        totalRestaurants: 0,
+        activeRestaurants: 0,
+        totalUsers: 0,
+        totalMenuItems: 0,
+      })
+    }
   }
 
   const handleLogout = () => {
@@ -87,24 +99,27 @@ export default function SuperAdminDashboard() {
             label="Total Restaurants"
             value={stats.totalRestaurants}
             bgColor="bg-blue-500"
+            onClick={() => navigate('/superadmin/restaurants')}
           />
           <StatCard
             icon={<Activity className="w-6 h-6" />}
             label="Active Restaurants"
             value={stats.activeRestaurants}
             bgColor="bg-green-500"
+            onClick={() => navigate('/superadmin/restaurants')}
+          />
+          <StatCard
+            icon={<Clock className="w-6 h-6" />}
+            label="Pending Approval"
+            value={stats.totalRestaurants - stats.activeRestaurants}
+            bgColor="bg-yellow-500"
+            onClick={() => navigate('/superadmin/restaurants')}
           />
           <StatCard
             icon={<Users className="w-6 h-6" />}
             label="Total Users"
             value={stats.totalUsers}
             bgColor="bg-purple-500"
-          />
-          <StatCard
-            icon={<TrendingUp className="w-6 h-6" />}
-            label="Total Menu Items"
-            value={stats.totalMenuItems}
-            bgColor="bg-orange-500"
           />
         </div>
 
@@ -151,14 +166,16 @@ function StatCard({
   label,
   value,
   bgColor,
+  onClick,
 }: {
   icon: React.ReactNode
   label: string
   value: number
   bgColor: string
+  onClick?: () => void
 }) {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
+  const cardContent = (
+    <>
       <div className="flex items-center justify-between mb-4">
         <div className={`${bgColor} text-white p-3 rounded-lg`}>{icon}</div>
       </div>
@@ -166,6 +183,23 @@ function StatCard({
         <p className="text-sm font-medium text-gray-600 mb-1">{label}</p>
         <p className="text-3xl font-bold text-gray-900">{value}</p>
       </div>
+    </>
+  )
+
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow text-left w-full"
+      >
+        {cardContent}
+      </button>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      {cardContent}
     </div>
   )
 }

@@ -17,6 +17,7 @@ import QRCodeView from './pages/admin/QRCodeView'
 import ExploreRestaurants from './pages/public/ExploreRestaurants'
 import RestaurantMenu from './pages/public/RestaurantMenu'
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
+import RestaurantsManagement from './pages/superadmin/RestaurantsManagement'
 
 function ProtectedRoute({
   children,
@@ -178,6 +179,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
               <SuperAdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/superadmin/restaurants"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+              <RestaurantsManagement />
             </ProtectedRoute>
           }
         />

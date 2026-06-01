@@ -8,7 +8,6 @@ import {
 import {
   ArrowLeft,
   Check,
-  X,
   Ban,
   CheckCircle,
   Star,

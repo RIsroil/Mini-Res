@@ -4,7 +4,6 @@ import { toast } from 'react-hot-toast'
 import {
   Users,
   Store,
-  TrendingUp,
   Shield,
   LogOut,
   Settings,

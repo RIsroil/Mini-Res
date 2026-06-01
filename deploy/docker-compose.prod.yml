@@ -1,0 +1,118 @@
+# Production Docker Compose for QR Menu Platform
+# Server: 188.245.65.247
+# Access: http://188.245.65.247:3000 (Frontend), http://188.245.65.247:8080 (Backend API)
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: qrmenu-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-qrmenu}
+      POSTGRES_USER: ${DB_USER:-qrmenu_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_this_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - qrmenu-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-qrmenu_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: qrmenu-redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - qrmenu-network
+    command: redis-server --appendonly yes
+
+  minio:
+    image: minio/minio:latest
+    container_name: qrmenu-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+    volumes:
+      - minio_data:/data
+    networks:
+      - qrmenu-network
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: qrmenu-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-qrmenu}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-qrmenu_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-change_this_password}
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-your-production-jwt-secret-key-minimum-64-characters-long}
+      JWT_EXPIRATION_MS: 3600000
+      JWT_REFRESH_EXPIRATION_MS: 604800000
+
+      # MinIO
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_URL: http://188.245.65.247:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      MINIO_BUCKET_NAME: qrmenu-images
+
+      # CORS
+      CORS_ALLOWED_ORIGINS: http://188.245.65.247:3000,http://188.245.65.247
+
+      # Server
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: prod
+
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - qrmenu-network
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://188.245.65.247:8080/api/v1
+    container_name: qrmenu-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    networks:
+      - qrmenu-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  qrmenu-network:
+    driver: bridge

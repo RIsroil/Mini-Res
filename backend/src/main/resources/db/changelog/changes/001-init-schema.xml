@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- 001 - Extensions -->
+    <changeSet id="001-extensions" author="system">
+        <sql>CREATE EXTENSION IF NOT EXISTS postgis;</sql>
+        <sql>CREATE EXTENSION IF NOT EXISTS "uuid-ossp";</sql>
+    </changeSet>
+
+    <!-- 002 - Users Table -->
+    <changeSet id="002-users-table" author="system">
+        <sql splitStatements="true">
+            CREATE TABLE users (
+                                   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                   phone VARCHAR(20) NOT NULL UNIQUE,
+                                   email VARCHAR(255),
+                                   password_hash VARCHAR(255),
+                                   otp_code VARCHAR(6),
+                                   otp_expires_at TIMESTAMP,
+                                   otp_verified BOOLEAN DEFAULT FALSE,
+                                   full_name VARCHAR(255),
+                                   is_active BOOLEAN DEFAULT TRUE,
+                                   role VARCHAR(20) NOT NULL DEFAULT 'RESTAURANT_ADMIN',
+                                   last_login_at TIMESTAMP,
+                                   failed_login_attempts INTEGER DEFAULT 0,
+                                   locked_until TIMESTAMP,
+                                   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   deleted_at TIMESTAMP
+            );
+
+            CREATE INDEX idx_users_phone ON users(phone);
+            CREATE INDEX idx_users_role ON users(role);
+            CREATE INDEX idx_users_email ON users(email);
+        </sql>
+    </changeSet>
+
+    <!-- 003 - Restaurants Table -->
+    <changeSet id="003-restaurants-table" author="system">
+        <sql splitStatements="true">
+            CREATE TABLE restaurants (
+                                         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                         slug VARCHAR(255) NOT NULL UNIQUE,
+                                         name VARCHAR(255) NOT NULL,
+                                         phone VARCHAR(20),
+                                         email VARCHAR(255),
+                                         description TEXT,
+                                         logo_url VARCHAR(500),
+                                         cover_image_url VARCHAR(500),
+                                         address TEXT,
+                                         city VARCHAR(100),
+                                         country VARCHAR(100),
+                                         location GEOGRAPHY(Point, 4326),
+                                         instagram_url VARCHAR(255),
+                                         facebook_url VARCHAR(255),
+                                         website_url VARCHAR(255),
+                                         working_hours JSONB,
+                                         status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                                         is_premium BOOLEAN DEFAULT FALSE,
+                                         global_promotion_text TEXT,
+                                         promotion_active BOOLEAN DEFAULT FALSE,
+                                         qr_code_url VARCHAR(500),
+                                         admin_user_id UUID UNIQUE REFERENCES users(id),
+                                         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                         deleted_at TIMESTAMP
+            );
+
+            CREATE INDEX idx_restaurants_slug ON restaurants(slug);
+            CREATE INDEX idx_restaurants_status ON restaurants(status);
+            CREATE INDEX idx_restaurants_admin_user ON restaurants(admin_user_id);
+            CREATE INDEX idx_restaurants_location ON restaurants USING GIST(location);
+        </sql>
+    </changeSet>
+
+    <!-- 004 - Menu Categories -->
+    <changeSet id="004-menu-categories-table" author="system">
+        <sql splitStatements="true">
+            CREATE TABLE menu_categories (
+                                             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                             restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+                                             name VARCHAR(100) NOT NULL,
+                                             display_order INTEGER DEFAULT 0,
+                                             icon_url VARCHAR(255),
+                                             is_active BOOLEAN DEFAULT TRUE,
+                                             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                             deleted_at TIMESTAMP
+            );
+
+            CREATE INDEX idx_menu_categories_restaurant ON menu_categories(restaurant_id);
+            CREATE INDEX idx_menu_categories_display_order ON menu_categories(display_order);
+        </sql>
+    </changeSet>
+
+    <!-- 005 - Menu Items -->
+    <changeSet id="005-menu-items-table" author="system">
+        <sql splitStatements="true">
+            CREATE TABLE menu_items (
+                                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                        restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+                                        category_id UUID REFERENCES menu_categories(id) ON DELETE SET NULL,
+                                        name VARCHAR(255) NOT NULL,
+                                        description TEXT,
+                                        ingredients TEXT,
+                                        price DECIMAL(10,2) NOT NULL,
+                                        preparation_time_minutes INTEGER,
+                                        promotion_text TEXT,
+                                        promotion_active BOOLEAN DEFAULT FALSE,
+                                        is_active BOOLEAN DEFAULT TRUE,
+                                        is_available BOOLEAN DEFAULT TRUE,
+                                        has_premium_badge BOOLEAN DEFAULT FALSE,
+                                        images JSONB,
+                                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                        deleted_at TIMESTAMP
+            );
+
+            CREATE INDEX idx_menu_items_restaurant ON menu_items(restaurant_id);
+            CREATE INDEX idx_menu_items_category ON menu_items(category_id);
+            CREATE INDEX idx_menu_items_active ON menu_items(is_active);
+            CREATE INDEX idx_menu_items_available ON menu_items(is_available);
+        </sql>
+    </changeSet>
+
+    <!-- 006 - Menu Items Search -->
+    <changeSet id="006-menu-items-search" author="system">
+        <sql splitStatements="false">
+            ALTER TABLE menu_items ADD COLUMN search_vector tsvector;
+            CREATE INDEX idx_menu_items_search ON menu_items USING GIN(search_vector);
+
+            CREATE OR REPLACE FUNCTION menu_items_search_trigger() RETURNS trigger AS $$
+            BEGIN
+                NEW.search_vector :=
+                    setweight(to_tsvector('english', COALESCE(NEW.name, '')), 'A') ||
+                    setweight(to_tsvector('english', COALESCE(NEW.description, '')), 'B') ||
+                    setweight(to_tsvector('english', COALESCE(NEW.ingredients, '')), 'C');
+            RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER menu_items_search_update
+                BEFORE INSERT OR UPDATE OF name, description, ingredients
+                                 ON menu_items
+                                     FOR EACH ROW
+                                     EXECUTE FUNCTION menu_items_search_trigger();
+        </sql>
+    </changeSet>
+
+    <!-- 007 - QR Scans -->
+    <changeSet id="007-qr-scans-table" author="system">
+        <sql splitStatements="true">
+            CREATE TABLE qr_scans (
+                                      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                      restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+                                      ip_address VARCHAR(45),
+                                      user_agent TEXT,
+                                      device_type VARCHAR(50),
+                                      scan_location GEOGRAPHY(Point, 4326),
+                                      scanned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX idx_qr_scans_restaurant ON qr_scans(restaurant_id);
+            CREATE INDEX idx_qr_scans_date ON qr_scans(scanned_at);
+        </sql>
+    </changeSet>
+
+    <!-- 008 - Search History -->
+    <changeSet id="008-search-history-table" author="system">
+        <sql splitStatements="true">
+            CREATE TABLE search_history (
+                                            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                            search_query VARCHAR(255) NOT NULL,
+                                            search_type VARCHAR(20),
+                                            restaurant_id UUID REFERENCES restaurants(id) ON DELETE SET NULL,
+                                            results_count INTEGER DEFAULT 0,
+                                            ip_address VARCHAR(45),
+                                            user_location GEOGRAPHY(Point, 4326),
+                                            searched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX idx_search_history_query ON search_history(search_query);
+            CREATE INDEX idx_search_history_date ON search_history(searched_at);
+            CREATE INDEX idx_search_history_restaurant ON search_history(restaurant_id);
+        </sql>
+    </changeSet>
+
+    <!-- 009 - Default Admin User -->
+    <changeSet id="009-default-admin" author="system">
+        <sql>
+            INSERT INTO users (phone, password_hash, full_name, role, is_active, otp_verified)
+            VALUES ('+998901234567', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Super Admin', 'SUPER_ADMIN', TRUE, TRUE);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

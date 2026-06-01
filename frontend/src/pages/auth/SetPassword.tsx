@@ -49,9 +49,13 @@ export default function SetPassword() {
         password: data.password,
       })
 
-      setAuth(response.data.data)
+      const authData = response.data.data
+      setAuth(authData)
       toast.success('Welcome!')
-      navigate('/dashboard')
+
+      // Redirect based on role
+      const redirectPath = authData.role === 'SUPER_ADMIN' ? '/superadmin' : '/dashboard'
+      navigate(redirectPath)
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to set password')
     } finally {

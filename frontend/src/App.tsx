@@ -18,9 +18,29 @@ import ExploreRestaurants from './pages/public/ExploreRestaurants'
 import RestaurantMenu from './pages/public/RestaurantMenu'
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore()
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />
+function ProtectedRoute({
+  children,
+  allowedRoles
+}: {
+  children: React.ReactNode
+  allowedRoles?: string[]
+}) {
+  const { isAuthenticated, user } = useAuthStore()
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />
+  }
+
+  // If specific roles are required, check them
+  if (allowedRoles && allowedRoles.length > 0) {
+    if (!user || !allowedRoles.includes(user.role)) {
+      // Redirect to appropriate dashboard based on role
+      const redirectPath = user?.role === 'SUPER_ADMIN' ? '/superadmin' : '/dashboard'
+      return <Navigate to={redirectPath} />
+    }
+  }
+
+  return <>{children}</>
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -99,7 +119,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['RESTAURANT_ADMIN']}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -123,7 +143,7 @@ function App() {
         <Route
           path="/admin/restaurant"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['RESTAURANT_ADMIN']}>
               <RestaurantManagement />
             </ProtectedRoute>
           }
@@ -131,7 +151,7 @@ function App() {
         <Route
           path="/admin/categories"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['RESTAURANT_ADMIN']}>
               <CategoriesManagement />
             </ProtectedRoute>
           }
@@ -139,7 +159,7 @@ function App() {
         <Route
           path="/admin/menu"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['RESTAURANT_ADMIN']}>
               <MenuManagement />
             </ProtectedRoute>
           }
@@ -147,7 +167,7 @@ function App() {
         <Route
           path="/admin/qr-code"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['RESTAURANT_ADMIN']}>
               <QRCodeView />
             </ProtectedRoute>
           }
@@ -156,7 +176,7 @@ function App() {
         <Route
           path="/superadmin"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
               <SuperAdminDashboard />
             </ProtectedRoute>
           }

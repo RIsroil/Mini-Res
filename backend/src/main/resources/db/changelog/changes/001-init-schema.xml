@@ -189,11 +189,18 @@
         </sql>
     </changeSet>
 
-    <!-- 009 - Default Admin User -->
-    <changeSet id="009-default-admin" author="system">
+    <!-- 009 - Default Admin Users -->
+    <changeSet id="009-default-admin-users" author="system">
         <sql>
+            -- Super Admin (phone: +998901234567, password: secret)
             INSERT INTO users (phone, password_hash, full_name, role, is_active, otp_verified)
-            VALUES ('+998901234567', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Super Admin', 'SUPER_ADMIN', TRUE, TRUE);
+            VALUES ('+998901234567', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Super Admin', 'SUPER_ADMIN', TRUE, TRUE)
+            ON CONFLICT (phone) DO NOTHING;
+
+            -- Test Restaurant Admin (phone: +998901234568, password: secret)
+            INSERT INTO users (phone, password_hash, full_name, email, role, is_active, otp_verified)
+            VALUES ('+998901234568', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'Test Restaurant Admin', 'test@restaurant.com', 'RESTAURANT_ADMIN', TRUE, TRUE)
+            ON CONFLICT (phone) DO NOTHING;
         </sql>
     </changeSet>
 

@@ -11,6 +11,8 @@ import mini.cafe.project.exception.ResourceNotFoundException;
 import mini.cafe.project.repository.MenuCategoryRepository;
 import mini.cafe.project.repository.MenuItemRepository;
 import mini.cafe.project.repository.RestaurantRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -142,6 +144,24 @@ public class MenuItemService {
 
         menuItem.setIsAvailable(!menuItem.getIsAvailable());
         menuItemRepository.save(menuItem);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MenuItemResponse> getPopularMenuItems(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<MenuItem> menuItems = menuItemRepository.findPopularMenuItems(pageable);
+        return menuItems.stream()
+                .map(this::toMenuItemResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MenuItemResponse> getLatestMenuItems(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<MenuItem> menuItems = menuItemRepository.findLatestMenuItems(pageable);
+        return menuItems.stream()
+                .map(this::toMenuItemResponse)
+                .collect(Collectors.toList());
     }
 
     private MenuItemResponse toMenuItemResponse(MenuItem item) {

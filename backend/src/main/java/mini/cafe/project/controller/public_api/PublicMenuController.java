@@ -9,10 +9,9 @@ import mini.cafe.project.dto.restaurant.RestaurantResponse;
 import mini.cafe.project.service.menu.MenuCategoryService;
 import mini.cafe.project.service.menu.MenuItemService;
 import mini.cafe.project.service.restaurant.RestaurantService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 import java.util.List;
 
@@ -43,5 +42,19 @@ public class PublicMenuController {
                 .build();
 
         return ApiResponse.success(response);
+    }
+
+    @GetMapping("/popular")
+    public ApiResponse<List<MenuItemResponse>> getPopularMenuItems(
+            @RequestParam(defaultValue = "20") int limit) {
+        List<MenuItemResponse> popularItems = menuItemService.getPopularMenuItems(limit);
+        return ApiResponse.success(popularItems);
+    }
+
+    @GetMapping("/latest")
+    public ApiResponse<List<MenuItemResponse>> getLatestMenuItems(
+            @RequestParam(defaultValue = "20") int limit) {
+        List<MenuItemResponse> latestItems = menuItemService.getLatestMenuItems(limit);
+        return ApiResponse.success(latestItems);
     }
 }

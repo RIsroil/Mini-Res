@@ -114,6 +114,18 @@ export const publicApiService = {
   getMenu: (restaurantSlug: string) =>
     publicApi.get<ApiResponse<MenuResponse>>(`/menu/${restaurantSlug}`),
 
+  // Get popular menu items (promoted or premium)
+  getPopularMenuItems: (limit: number = 20) =>
+    publicApi.get<ApiResponse<PublicMenuItem[]>>(`/menu/popular`, {
+      params: { limit },
+    }),
+
+  // Get latest menu items
+  getLatestMenuItems: (limit: number = 20) =>
+    publicApi.get<ApiResponse<PublicMenuItem[]>>(`/menu/latest`, {
+      params: { limit },
+    }),
+
   // Search restaurants and menu items
   search: (query: string) =>
     publicApi.get<ApiResponse<SearchResult[]>>(`/search`, {

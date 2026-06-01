@@ -42,11 +42,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/api/v1/search/**").permitAll()
-                        .requestMatchers("/api/v1/restaurants/**").permitAll()
-                        .requestMatchers("/api/v1/menu/**").permitAll()
-                        .requestMatchers("/api/v1/qr/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/public/**").permitAll()
+                        .requestMatchers("/api/v1/search/**").permitAll()
+                        .requestMatchers("/api/v1/qr/**").permitAll()
 
                         // Actuator
                         .requestMatchers("/actuator/**").permitAll()

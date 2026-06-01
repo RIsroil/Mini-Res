@@ -106,4 +106,29 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, UUID> {
 
     @Query("SELECT COUNT(mi) FROM MenuItem mi WHERE mi.isActive = TRUE AND mi.deletedAt IS NULL")
     Long countAllActive();
+
+    // Get popular menu items (with promotion or premium badge, active and available)
+    @Query("""
+            SELECT mi FROM MenuItem mi
+            WHERE mi.isActive = TRUE
+            AND mi.isAvailable = TRUE
+            AND mi.deletedAt IS NULL
+            AND mi.restaurant.status = 'ACTIVE'
+            AND mi.restaurant.deletedAt IS NULL
+            AND (mi.promotionActive = TRUE OR mi.hasPremiumBadge = TRUE)
+            ORDER BY mi.createdAt DESC
+            """)
+    List<MenuItem> findPopularMenuItems(Pageable pageable);
+
+    // Get latest menu items
+    @Query("""
+            SELECT mi FROM MenuItem mi
+            WHERE mi.isActive = TRUE
+            AND mi.isAvailable = TRUE
+            AND mi.deletedAt IS NULL
+            AND mi.restaurant.status = 'ACTIVE'
+            AND mi.restaurant.deletedAt IS NULL
+            ORDER BY mi.createdAt DESC
+            """)
+    List<MenuItem> findLatestMenuItems(Pageable pageable);
 }

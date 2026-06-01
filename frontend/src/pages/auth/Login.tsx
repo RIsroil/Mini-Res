@@ -29,9 +29,16 @@ export default function Login() {
     setIsLoading(true)
     try {
       const response = await authApi.login(data)
-      setAuth(response.data.data)
+      const authData = response.data.data
+      setAuth(authData)
       toast.success('Login successful!')
-      navigate('/dashboard')
+
+      // Redirect based on role
+      if (authData.role === 'SUPER_ADMIN') {
+        navigate('/superadmin')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Login failed')
     } finally {

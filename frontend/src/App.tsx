@@ -16,6 +16,7 @@ import MenuManagement from './pages/admin/MenuManagement'
 import QRCodeView from './pages/admin/QRCodeView'
 import ExploreRestaurants from './pages/public/ExploreRestaurants'
 import RestaurantMenu from './pages/public/RestaurantMenu'
+import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
@@ -23,8 +24,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore()
-  return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" />
+  const { isAuthenticated, user } = useAuthStore()
+  if (!isAuthenticated) return <>{children}</>
+  // Redirect based on role
+  const redirectPath = user?.role === 'SUPER_ADMIN' ? '/superadmin' : '/dashboard'
+  return <Navigate to={redirectPath} />
 }
 
 function App() {
@@ -145,6 +149,15 @@ function App() {
           element={
             <ProtectedRoute>
               <QRCodeView />
+            </ProtectedRoute>
+          }
+        />
+        {/* Super Admin Routes */}
+        <Route
+          path="/superadmin"
+          element={
+            <ProtectedRoute>
+              <SuperAdminDashboard />
             </ProtectedRoute>
           }
         />

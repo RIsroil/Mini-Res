@@ -4,7 +4,8 @@ import { toast } from 'react-hot-toast'
 import {
   publicApiService,
   NearbyRestaurant,
-  SearchResult
+  SearchResult,
+  PublicMenuItem
 } from '../../lib/publicApi'
 import {
   Search,
@@ -12,12 +13,15 @@ import {
   Navigation,
   Star,
   ChevronRight,
-  Loader2
+  Loader2,
+  TrendingUp,
+  Clock
 } from 'lucide-react'
 
 export default function ExploreRestaurants() {
   const navigate = useNavigate()
   const [nearbyRestaurants, setNearbyRestaurants] = useState<NearbyRestaurant[]>([])
+  const [popularMenuItems, setPopularMenuItems] = useState<PublicMenuItem[]>([])
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
@@ -28,7 +32,18 @@ export default function ExploreRestaurants() {
   useEffect(() => {
     // Try to get user location on mount
     getCurrentLocation()
+    // Load popular items regardless of location
+    loadPopularItems()
   }, [])
+
+  const loadPopularItems = async () => {
+    try {
+      const { data } = await publicApiService.getPopularMenuItems(20)
+      setPopularMenuItems(data.data)
+    } catch (error) {
+      console.error('Failed to load popular items:', error)
+    }
+  }
 
   const getCurrentLocation = () => {
     setLocationLoading(true)
@@ -198,24 +213,12 @@ export default function ExploreRestaurants() {
           </div>
         </div>
 
-        {/* Nearby Restaurants */}
+        {/* Nearby Restaurants or Popular Items */}
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
           </div>
-        ) : nearbyRestaurants.length === 0 ? (
-          <div className="text-center py-12">
-            <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              {userLocation ? 'No restaurants nearby' : 'Enable location to find restaurants'}
-            </h3>
-            <p className="text-gray-500">
-              {userLocation
-                ? 'Try increasing the search radius'
-                : 'Click "Get My Location" to see restaurants near you'}
-            </p>
-          </div>
-        ) : (
+        ) : nearbyRestaurants.length > 0 ? (
           <>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               Nearby Restaurants ({nearbyRestaurants.length})
@@ -229,6 +232,49 @@ export default function ExploreRestaurants() {
                 />
               ))}
             </div>
+          </>
+        ) : (
+          <>
+            {!userLocation && (
+              <div className="text-center py-8 mb-8 bg-blue-50 rounded-lg">
+                <MapPin className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                  Enable location to find restaurants near you
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Or browse our popular menu items below
+                </p>
+              </div>
+            )}
+
+            {/* Popular Menu Items */}
+            {popularMenuItems.length > 0 && (
+              <>
+                <div className="flex items-center gap-2 mb-6">
+                  <TrendingUp className="w-6 h-6 text-red-600" />
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Popular Menu Items
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {popularMenuItems.map((item) => (
+                    <MenuItemCard
+                      key={item.id}
+                      item={item}
+                      onClick={() => navigate(`/r/${item.restaurantSlug}`)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {userLocation && nearbyRestaurants.length === 0 && (
+              <div className="text-center py-12 mt-8">
+                <p className="text-gray-500">
+                  No restaurants found nearby. Try increasing the search radius.
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -299,6 +345,71 @@ function RestaurantCard({
           <span className="text-sm font-semibold text-blue-600">
             {restaurant.distance.toFixed(1)} km away
           </span>
+        </div>
+      </div>
+    </button>
+  )
+}
+
+// Menu Item Card Component
+function MenuItemCard({
+  item,
+  onClick,
+}: {
+  item: PublicMenuItem
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden text-left group"
+    >
+      {/* Image */}
+      <div className="relative h-40 bg-gray-200">
+        {item.primaryImage ? (
+          <img
+            src={item.primaryImage}
+            alt={item.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
+            <span className="text-sm">No image</span>
+          </div>
+        )}
+
+        {/* Badges */}
+        <div className="absolute top-2 right-2 flex flex-col gap-1">
+          {item.hasPremiumBadge && (
+            <span className="bg-purple-600 text-white px-2 py-1 rounded-full text-xs font-semibold shadow">
+              Premium
+            </span>
+          )}
+          {item.promotionActive && item.promotionText && (
+            <span className="bg-red-600 text-white px-2 py-1 rounded-full text-xs font-semibold shadow">
+              Promo
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-3">
+        <div className="flex justify-between items-start mb-1">
+          <h3 className="text-base font-bold text-gray-900 line-clamp-1">{item.name}</h3>
+          <span className="text-lg font-bold text-green-600 ml-2">${item.price}</span>
+        </div>
+
+        <p className="text-xs text-gray-600 mb-2 line-clamp-2">{item.description}</p>
+
+        <div className="flex items-center justify-between pt-2 border-t">
+          <span className="text-xs text-gray-500">{item.restaurantName}</span>
+          {item.preparationTimeMinutes && (
+            <span className="flex items-center gap-1 text-xs text-gray-500">
+              <Clock className="w-3 h-3" />
+              {item.preparationTimeMinutes}m
+            </span>
+          )}
         </div>
       </div>
     </button>

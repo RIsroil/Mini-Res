@@ -50,10 +50,9 @@ export default function Register() {
   const onVerifyOTP = async (data: RegisterForm) => {
     setIsLoading(true)
     try {
-      const response = await authApi.verifyOTP(phoneNumber, data.otp)
-      setAuth(response.data.data)
-      toast.success('Account verified successfully!')
-      navigate('/dashboard')
+      await authApi.verifyOTP(phoneNumber, data.otp)
+      toast.success('OTP verified! Please set your password.')
+      navigate('/set-password', { state: { phone: phoneNumber } })
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'OTP verification failed')
     } finally {

@@ -1,11 +1,15 @@
 import axios from 'axios'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 })
+
+console.log('API Base URL:', API_BASE_URL)
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
@@ -72,7 +76,7 @@ export const authApi = {
     api.post<ApiResponse<void>>('/auth/send-otp', { phone }),
 
   verifyOTP: (phone: string, code: string) =>
-    api.post<ApiResponse<AuthResponse>>('/auth/verify-otp', { phone, code }),
+    api.post<ApiResponse<void>>('/auth/verify-otp', { phone, code }),
 
   forgotPassword: (phone: string) =>
     api.post<ApiResponse<void>>('/auth/forgot-password', { phone }),
@@ -86,8 +90,8 @@ export const authApi = {
   updatePhone: (data: { newPhone: string; otp: string }) =>
     api.post<ApiResponse<void>>('/auth/update-phone', data),
 
-  setPassword: (data: { phone: string; password: string }) =>
-    api.post<ApiResponse<void>>('/auth/set-password', data),
+  setPassword: (phone: string, password: string) =>
+    api.post<ApiResponse<void>>('/auth/set-password', { phone, password }),
 }
 
 export default api

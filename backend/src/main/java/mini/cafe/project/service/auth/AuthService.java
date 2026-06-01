@@ -86,6 +86,19 @@ public class AuthService {
     }
 
     @Transactional
+    public void verifyOTP(String phone, String otp) {
+        // Verify OTP
+        otpService.verifyOTP(phone, otp);
+
+        // Mark user as verified
+        User user = userRepository.findByPhone(phone)
+                .orElseThrow(() -> new BusinessException("User not found"));
+
+        user.setOtpVerified(true);
+        userRepository.save(user);
+    }
+
+    @Transactional
     public AuthResponse verifyOTPAndLogin(String phone, String otp) {
         // Verify OTP
         otpService.verifyOTP(phone, otp);
@@ -96,6 +109,7 @@ public class AuthService {
 
         // Update last login
         user.setLastLoginAt(java.time.LocalDateTime.now());
+        user.setOtpVerified(true);
         userRepository.save(user);
 
         // Generate tokens

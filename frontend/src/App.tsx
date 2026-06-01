@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/authStore'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import SetPassword from './pages/auth/SetPassword'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
 import Dashboard from './pages/Dashboard'
@@ -74,6 +75,7 @@ function App() {
             </PublicRoute>
           }
         />
+        <Route path="/set-password" element={<SetPassword />} />
         <Route
           path="/forgot-password"
           element={

@@ -37,10 +37,10 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<ApiResponse<AuthResponse>> verifyOTP(@Valid @RequestBody VerifyOTPRequest request) {
-        AuthResponse response = authService.verifyOTPAndLogin(request.getPhone(), request.getCode());
+    public ResponseEntity<ApiResponse<Void>> verifyOTP(@Valid @RequestBody VerifyOTPRequest request) {
+        authService.verifyOTP(request.getPhone(), request.getCode());
         return ResponseEntity.ok(
-                ApiResponse.success("OTP verified successfully", response)
+                ApiResponse.success("OTP verified successfully. Please set your password.", null)
         );
     }
 

@@ -114,7 +114,7 @@ export const restaurantApi = {
 
   uploadLogo: (file: File) => {
     const formData = new FormData()
-    formData.append('image', file)
+    formData.append('file', file)
     return api.post<ApiResponse<{ imageUrl: string }>>('/admin/images/restaurant/logo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
@@ -122,7 +122,7 @@ export const restaurantApi = {
 
   uploadCover: (file: File) => {
     const formData = new FormData()
-    formData.append('image', file)
+    formData.append('file', file)
     return api.post<ApiResponse<{ imageUrl: string }>>('/admin/images/restaurant/cover', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
@@ -187,7 +187,7 @@ export const menuItemApi = {
 
   uploadImage: (menuItemId: string, file: File) => {
     const formData = new FormData()
-    formData.append('image', file)
+    formData.append('file', file)
     return api.post<ApiResponse<{ imageUrl: string }>>(`/admin/images/menu/${menuItemId}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })

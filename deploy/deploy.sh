@@ -34,17 +34,26 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-# Check if Docker Compose is installed (V1 or V2)
+# Check if Docker Compose is available
+DOCKER_COMPOSE=""
 if command -v docker-compose &> /dev/null; then
     DOCKER_COMPOSE="docker-compose"
-elif docker compose version &> /dev/null; then
+    echo -e "${GREEN}✅ Using: docker-compose (V1)${NC}"
+elif docker compose version &> /dev/null 2>&1; then
     DOCKER_COMPOSE="docker compose"
+    echo -e "${GREEN}✅ Using: docker compose (V2)${NC}"
 else
-    echo -e "${RED}❌ Docker Compose not found. Please install Docker Compose first.${NC}"
+    echo -e "${RED}❌ Docker Compose not found.${NC}"
+    echo ""
+    echo "Docker is installed, but Docker Compose is missing."
+    echo "Please install Docker Compose:"
+    echo ""
+    echo "  sudo apt update"
+    echo "  sudo apt install docker-compose-plugin"
+    echo ""
+    echo "Or check: https://docs.docker.com/compose/install/"
     exit 1
 fi
-
-echo -e "${GREEN}✅ Using: $DOCKER_COMPOSE${NC}"
 
 echo -e "${BLUE}📦 Step 1: Checking environment...${NC}"
 

@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
-import { Phone, Lock, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import AuthLayout from '../components/layout/AuthLayout'
 import Button from '../components/ui/Button'
-import Input from '../components/ui/Input'
 import { userApi } from '../lib/adminApi'
 
 interface UpdatePhoneForm {

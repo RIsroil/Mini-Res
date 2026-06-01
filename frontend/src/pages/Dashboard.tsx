@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { LogOut, User, QrCode, BarChart3, Menu as MenuIcon, Store, FolderOpen } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import Button from '../components/ui/Button'
-import { restaurantApi, menuItemApi, categoryApi } from '../lib/adminApi'
+import { menuItemApi } from '../lib/adminApi'
 import { toast } from 'react-hot-toast'
 
 export default function Dashboard() {
@@ -15,7 +15,7 @@ export default function Dashboard() {
     qrScans: 0,
     menuItems: 0,
   })
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
 
   useEffect(() => {
     loadStats()
@@ -160,7 +160,7 @@ export default function Dashboard() {
               <p className="text-sm text-secondary-600">Download your QR code</p>
             </button>
             <button
-              onClick={() => toast.info('Analytics funksiyasi keyingi versiyada qo\'shiladi')}
+              onClick={() => toast('Analytics funksiyasi keyingi versiyada qo\'shiladi', { icon: 'ℹ️' })}
               className="p-4 rounded-xl border-2 border-secondary-200 hover:border-primary-500 hover:bg-primary-50 transition-all duration-200 text-left relative"
             >
               <BarChart3 className="w-8 h-8 text-primary-600 mb-2" />

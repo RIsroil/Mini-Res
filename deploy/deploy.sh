@@ -13,8 +13,20 @@ echo ""
 # Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Function to generate random password
+generate_password() {
+    local length=${1:-32}
+    openssl rand -base64 $length | tr -d "=+/" | cut -c1-$length
+}
+
+# Function to generate JWT secret (64 characters)
+generate_jwt_secret() {
+    openssl rand -base64 64 | tr -d "=+/" | cut -c1-64
+}
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
@@ -29,15 +41,51 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 echo -e "${BLUE}📦 Step 1: Checking environment...${NC}"
+
+# Create .env.production if it doesn't exist
 if [ ! -f ".env.production" ]; then
-    echo -e "${RED}❌ .env.production file not found!${NC}"
-    echo "Creating from template..."
-    cp .env.production.example .env.production
-    echo -e "${RED}⚠️  Please edit .env.production and update the passwords!${NC}"
-    exit 1
+    echo -e "${YELLOW}📝 Creating .env.production with secure random passwords...${NC}"
+
+    # Generate secure passwords
+    DB_PASSWORD=$(generate_password 24)
+    JWT_SECRET=$(generate_jwt_secret)
+    MINIO_SECRET_KEY=$(generate_password 24)
+
+    cat > .env.production << EOF
+# QR Menu Production Environment Variables
+# Auto-generated on $(date)
+# Server: 188.245.65.247
+
+# Database
+DB_NAME=mini-res
+DB_USER=mini-res-user
+DB_PASSWORD=${DB_PASSWORD}
+
+# JWT - 64 character secure secret
+JWT_SECRET=${JWT_SECRET}
+
+# MinIO
+MINIO_ACCESS_KEY=qrmenu_minio_admin
+MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+
+# Frontend
+VITE_API_BASE_URL=http://188.245.65.247:8080/api/v1
+EOF
+
+    echo -e "${GREEN}✅ .env.production created with secure passwords${NC}"
+    echo -e "${YELLOW}📋 IMPORTANT: Save these credentials!${NC}"
+    echo ""
+    echo -e "${BLUE}Database Password:${NC} ${DB_PASSWORD}"
+    echo -e "${BLUE}JWT Secret:${NC} ${JWT_SECRET:0:20}...${JWT_SECRET: -10}"
+    echo -e "${BLUE}MinIO Secret:${NC} ${MINIO_SECRET_KEY}"
+    echo ""
+    echo -e "${YELLOW}⚠️  These are auto-generated. Save them now!${NC}"
+    echo ""
+    read -p "Press ENTER to continue deployment..."
+else
+    echo -e "${GREEN}✅ Environment file found${NC}"
 fi
 
-echo -e "${GREEN}✅ Environment file found${NC}"
 echo ""
 
 echo -e "${BLUE}📦 Step 2: Stopping existing containers...${NC}"

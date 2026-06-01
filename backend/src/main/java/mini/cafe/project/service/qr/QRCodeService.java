@@ -5,13 +5,18 @@ import com.google.zxing.EncodeHintType;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,27 +26,38 @@ public class QRCodeService {
 
     private static final Logger logger = LoggerFactory.getLogger(QRCodeService.class);
 
+    private final MinioClient minioClient;
+
     @Value("${app.frontend-url:https://domain.com}")
     private String frontendUrl;
 
-    // TODO: Inject StorageService when needed
-    // private final StorageService storageService;
+    @Value("${minio.public-url}")
+    private String minioPublicUrl;
+
+    @Value("${minio.bucket-name}")
+    private String bucketName;
 
     public String generateQRCode(String restaurantSlug) {
         try {
             String url = frontendUrl + "/r/" + restaurantSlug;
-            BufferedImage qrImage = createQRImage(url, 300, 300);
+            BufferedImage qrImage = createQRImage(url, 512, 512);
 
-            // TODO: Upload to MinIO when needed
-            // ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            // ImageIO.write(qrImage, "PNG", baos);
-            // byte[] imageBytes = baos.toByteArray();
-            // String fileName = "qr-codes/" + restaurantSlug + ".png";
-            // return storageService.uploadImage(...);
+            // Convert to PNG byte array
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(qrImage, "PNG", baos);
+            byte[] imageBytes = baos.toByteArray();
 
-            // For now, return a placeholder URL
-            String qrUrl = frontendUrl + "/qr/" + restaurantSlug + ".png";
-            logger.info("Generated QR code URL: {}", qrUrl);
+            // Upload to MinIO
+            String objectName = "qr-codes/" + restaurantSlug + ".png";
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectName)
+                    .stream(new ByteArrayInputStream(imageBytes), imageBytes.length, -1)
+                    .contentType("image/png")
+                    .build());
+
+            String qrUrl = minioPublicUrl + "/" + bucketName + "/" + objectName;
+            logger.info("Generated and uploaded QR code: {}", qrUrl);
             return qrUrl;
 
         } catch (Exception e) {

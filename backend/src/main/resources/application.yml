@@ -60,6 +60,8 @@ spring:
 
 # Application Configuration
 app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+
   jwt:
     secret: ${JWT_SECRET:2lVo5TcjgTco3dUIwmYEIWcLfeiBR7QgjS9fFyn1Jdg}
     expiration-ms: ${JWT_EXPIRATION_MS:3600000} # 1 hour

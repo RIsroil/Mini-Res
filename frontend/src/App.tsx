@@ -15,9 +15,11 @@ import CategoriesManagement from './pages/admin/CategoriesManagement'
 import MenuManagement from './pages/admin/MenuManagement'
 import QRCodeView from './pages/admin/QRCodeView'
 import ExploreRestaurants from './pages/public/ExploreRestaurants'
+import ExplorePage from './pages/public/ExplorePage'
 import RestaurantMenu from './pages/public/RestaurantMenu'
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
 import RestaurantsManagement from './pages/superadmin/RestaurantsManagement'
+import UsersManagement from './pages/superadmin/UsersManagement'
 
 function ProtectedRoute({
   children,
@@ -190,8 +192,17 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/superadmin/users"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+              <UsersManagement />
+            </ProtectedRoute>
+          }
+        />
         {/* Public Routes - No Authentication Required */}
-        <Route path="/explore" element={<ExploreRestaurants />} />
+        <Route path="/explore" element={<ExplorePage />} />
+        <Route path="/explore-old" element={<ExploreRestaurants />} />
         <Route path="/r/:slug" element={<RestaurantMenu />} />
       </Routes>
     </BrowserRouter>

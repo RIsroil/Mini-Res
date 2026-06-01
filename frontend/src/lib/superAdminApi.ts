@@ -34,6 +34,13 @@ export interface RestaurantStats {
   blocked: number
 }
 
+export interface UserStats {
+  total: number
+  admins: number
+  superAdmins: number
+  active: number
+}
+
 // ==================== SUPER ADMIN API ====================
 
 export const superAdminApi = {
@@ -78,4 +85,14 @@ export const superAdminApi = {
   // Delete restaurant (soft delete)
   deleteRestaurant: (id: string) =>
     api.delete<ApiResponse<void>>(`/superadmin/restaurants/${id}`),
+
+  // User management
+  getUserStats: () =>
+    api.get<ApiResponse<UserStats>>('/superadmin/users/stats'),
+
+  getAllUsers: () =>
+    api.get<ApiResponse<any[]>>('/superadmin/users'),
+
+  toggleUserActive: (id: string) =>
+    api.patch<ApiResponse<void>>(`/superadmin/users/${id}/toggle-active`),
 }
